@@ -73,7 +73,7 @@ player_say(message, mode)
             break;
         }
 
-        return false;
+        return false; 
     }
 
     return true;
