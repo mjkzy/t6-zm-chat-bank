@@ -87,18 +87,44 @@ deposit(args)
         return;
     }
 
-    deposit = int(args[1]);
-    if ((self.score - deposit) < 0 && deposit != 0)
+    deposit = args[1];
+    _bank_log(typeof(deposit));
+    _bank_log(deposit);
+    deposit_int = int(deposit);
+    _bank_log(typeof(deposit_int));
+    _bank_log(deposit_int);
+
+    // if the int cast returns 0 but deposit wasn't 0 originally, then the cast failed
+    // this may be a false return but it's hard to distinguish
+    if (typeof(deposit) == "string"
+            && deposit != "0"
+            && typeof(deposit_int) == "int"
+            && deposit_int == 0) // false?
     {
-        self _error("You cannot deposit non-positive amounts of money");
+        if (deposit == "all")
+        {
+            deposit_internal(self.score);
+        }
+
         return;
     }
-    if (deposit > self.score)
+
+    if (deposit_int < 0 || deposit_int == 0 || (self.score - deposit_int) < 0)
+    {
+        self _error("You cannot deposit invalid amounts of money");
+        return;
+    }
+    if (deposit_int > self.score)
     {
         self _error("You cannot deposit more money than you have");
         return;
     }
 
+    deposit_internal(deposit_int);
+}
+
+deposit_internal(money)
+{
     guid = va("%s", self getguid()); // getguid() returns int but this will make it string
     bank = jsonparse(readfile(level.bank));
     if (!isdefined(bank[guid]))
@@ -107,12 +133,11 @@ deposit(args)
         bank[guid] = 0;
     }
 
-    // add old money + deposit
     old = bank[guid];
-    bank[guid] = int((old + deposit));
-    self.score -= deposit;
+    bank[guid] = int((old + money));
+    self.score -= money;
 
-    self tell(va("You have deposited ^2$%s ^7into the bank", deposit));
+    self tell(va("You have deposited ^2$%s ^7into the bank", money));
 
     writefile(level.bank, jsonserialize(bank));
 }
@@ -125,13 +150,39 @@ withdraw(args)
         return;
     }
 
-    withdraw = int(args[1]);
-    if (withdraw < 0)
+    withdraw = args[1];
+    _bank_log(typeof(withdraw));
+    _bank_log(withdraw);
+    withdraw_int = int(withdraw);
+    _bank_log(typeof(withdraw_int));
+    _bank_log(withdraw_int);
+
+    // if the int cast returns 0 but deposit wasn't 0 originally, then the cast failed
+    // this may be a false return but it's hard to distinguish
+    if (typeof(withdraw) == "string"
+            && withdraw != "0"
+            && typeof(withdraw_int) == "int"
+            && withdraw_int == 0) // false?
     {
-        self _error("You cannot withdraw negative amounts of money");
+        if (withdraw == "all")
+        {
+            withdraw_internal();
+        }
+
         return;
     }
 
+    if (withdraw_int < 0 || withdraw_int == 0)
+    {
+        self _error("You cannot withdraw invalid amounts of money");
+        return;
+    }
+
+    withdraw_internal(withdraw_int);
+}
+
+withdraw_internal(money)
+{
     guid = va("%s", self getguid());
     bank = jsonparse(readfile(level.bank));
     if (!isdefined(bank[guid]))
@@ -139,18 +190,27 @@ withdraw(args)
         self _error("You do not have a bank account with money");
         return;
     }
-    if (withdraw > bank[guid])
+
+    _bank_log(money);
+    _bank_log(bank[guid]);
+    if (money > bank[guid])
     {
         self _error("You cannot withdraw more money than you have (/balance)");
         return;
     }
 
+    // if money isn't defined, let's assume it's all the money they wanna withdraw
+    if (!isdefined(money))
+    {
+        money = bank[guid];
+    }
+
     // subtract old money - withdraw
     old = bank[guid];
-    bank[guid] = int((old - withdraw));
-    self.score += withdraw;
+    bank[guid] = int((old - money));
+    self.score += money;
 
-    self tell(va("You have withdrew ^2$%s ^7into the bank", withdraw));
+    self tell(va("You have withdrew ^2$%s ^7into the bank, you have ^2$%s ^7remaining", money, bank[guid]));
 
     if (bank[guid] == 0)
     {
