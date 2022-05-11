@@ -20,28 +20,23 @@ init()
     level._bank_debug = getDvarIntDefault("bank_debug", 0);
 
     // create bank folders/files
-    bank_folder = va("%s/bank", getdvar("fs_homepath"));
-    if (!directoryexists(bank_folder))
+    level.bank_folder = va("%s/bank", getdvar("fs_homepath"));
+    if (!directoryexists(level.bank_folder))
     {
         _bank_log("Creating bank directory...");
-        createdirectory(bank_folder);
+        createdirectory(level.bank_folder);
     }
+    _bank_log(va("level.bank_folder = %s", level.bank));
 
-    bank_file = va("%s/bank.json", bank_folder);
-    if (!fileexists(bank_file))
+    level.bank_file = va("%s/bank.json", level.bank_folder);
+    if (!fileexists(level.bank_file))
     {
         _bank_log("Creating bank JSON file...");
 
-        // placeholder value, should remain if you don't wanna mess shit up
-        // im too lazy to do it any other way as of now
         bank = [];
-        bank["0"] = 0;
-
-        writefile(bank_file, jsonserialize(bank));
+        writefile(level.bank_file, jsonserialize(bank));
     }
-
-    level.bank = bank_file;
-    _bank_log(va("level.bank = %s", level.bank));
+    _bank_log(va("level.bank_file = %s", level.bank));
 
     // add callback to player chat
     onPlayerSay(::player_say);
