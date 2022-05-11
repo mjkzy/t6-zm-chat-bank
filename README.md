@@ -1,5 +1,5 @@
 # T6ZM Chat Bank
-a simple POC chat bank system using JSON files.
+a simple chat bank system
 
 ## requisites
 [t6-gsc-utils](https://github.com/fedddddd/t6-gsc-utils/releases)
