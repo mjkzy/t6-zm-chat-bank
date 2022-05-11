@@ -143,8 +143,8 @@ withdraw(args)
     withdraw_int = int(withdraw); // int
 
     // "all" amount
-    if (typeof(deposit) == "string"
-            && deposit == "all")
+    if (typeof(withdraw) == "string"
+            && withdraw == "all")
     {
         withdraw_internal();
         return;
