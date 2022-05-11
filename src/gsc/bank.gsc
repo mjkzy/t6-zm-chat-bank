@@ -13,6 +13,46 @@ _error(msg)
     self tell(va("^1ERROR: ^7%s", msg));
 }
 
+get_bank_filename()
+{
+    guid = self getGuid();
+    return level.bank_folder + "/" + guid;
+}
+
+bank_write(value)
+{
+    name = self get_bank_filename();
+    writeFile(name, value);
+}
+
+bank_read()
+{
+    name = self get_bank_filename();
+    if (!fileExists(name))
+    {
+        return 0;
+    }
+    return int64_op(readFile(name), "+", 0);
+}
+
+bank_add(value)
+{
+    current = self bank_read();
+    self bank_write(int64_op(current, "+", value));
+}
+
+bank_sub(value)
+{
+    current = self bank_read();
+    self bank_write(int64_op(current, "-", value));
+}
+
+bank_remove()
+{
+    name = self get_bank_filename();
+    removeFile(name);
+}
+
 // main stuff below
 init()
 {
@@ -21,22 +61,11 @@ init()
 
     // create bank folders/files
     level.bank_folder = va("%s/bank", getdvar("fs_homepath"));
-    if (!directoryexists(level.bank_folder))
+    if (!directoryExists(level.bank_folder))
     {
         _bank_log("Creating bank directory...");
-        createdirectory(level.bank_folder);
+        createDirectory(level.bank_folder);
     }
-    _bank_log(va("level.bank_folder = %s", level.bank_folder));
-
-    level.bank_file = va("%s/bank.json", level.bank_folder);
-    if (!fileexists(level.bank_file))
-    {
-        _bank_log("Creating bank JSON file...");
-
-        bank = [];
-        writefile(level.bank_file, jsonserialize(bank));
-    }
-    _bank_log(va("level.bank_file = %s", level.bank_file));
 
     // add callback to player chat
     onPlayerSay(::player_say);
@@ -44,31 +73,35 @@ init()
 
 player_say(message, mode)
 {
-    if (message[0] == "/")
+    message = toLower(message);
+
+    if (message[0] == "/" || message[0] == "!")
     {
         args = strtok(message, " ");
-        command = args[0];
+        command = getSubStr(args[0], 1);
 
         switch (command)
         {
-        case "/deposit":
-        case "/d":
+        case "deposit":
+        case "d":
+        {
             self thread deposit(args);
-            break;
-
-        case "/withdraw":
-        case "/w":
-            self thread withdraw(args);
-            break;
-
-        case "/balance":
-        case "/b":
-        case "/money":
-            self thread balance();
-            break;
+            return false;
         }
-
-        return false;
+        case "withdraw":
+        case "w":
+        {
+            self thread withdraw(args);
+            return false;
+        }
+        case "balance":
+        case "b":
+        case "money":
+        {
+            self thread balance();
+            return false;
+        }
+        }
     }
 
     return true;
@@ -78,133 +111,101 @@ deposit(args)
 {
     if (!isdefined(args[1]))
     {
-        self _error("You must provide a amount to deposit");
+        self _error("You must provide an amount to deposit.");
         return;
     }
 
-    deposit = args[1]; // string
-    deposit_int = int(deposit); // int
+    deposit = args[1];
 
-    // "all" amount
-    if (typeof(deposit) == "string"
-            && deposit == "all")
+    if (deposit == "all")
     {
         deposit_internal(self.score);
         return;
     }
 
-    // if deposit_int is 0, it could either be a false return due to invalid casting or just be literally 0, so win win
-    if (deposit_int < 0 || deposit_int == 0 || (self.score - deposit_int) < 0)
+    if (int64_op(deposit, "<=", 0))
     {
-        self _error("You cannot deposit invalid amounts of money");
-        return;
-    }
-    else if (deposit_int > self.score)
-    {
-        self _error("You cannot deposit more money than you have");
+        self _error("You cannot deposit invalid amounts of money.");
         return;
     }
 
-    deposit_internal(deposit_int);
+    if (int64_op(deposit, ">", self.score))
+    {
+        self _error("You cannot deposit more money than you have.");
+        return;
+    }
+
+    deposit_internal(int(deposit));
 }
 
-// this function handles the exact same code and I use it twice so this is the "internal" part
 deposit_internal(money)
 {
-    guid = va("%s", self getguid()); // getguid() returns int but this will make it string
-    bank = jsonparse(readfile(level.bank_file));
-    if (!isdefined(bank[guid]))
-    {
-        _bank_log(va("Creating new bank entry for %s", guid));
-        bank[guid] = 0;
-    }
-
-    old = bank[guid];
-    bank[guid] = int((old + money));
+    self bank_add(money);
     self.score -= money;
-
-    self tell(va("You have deposited ^2$%s ^7into the bank", money));
-
-    writefile(level.bank_file, jsonserialize(bank));
+    self tell(va("You have deposited ^2$%s^7 into the bank, you have ^2$%s ^7remaining.", money, self bank_read()));
 }
 
 withdraw(args)
 {
     if (!isdefined(args[1]))
     {
-        self _error("You must provide a amount to withdraw");
+        self _error("You must provide an amount to withdraw.");
         return;
     }
 
-    withdraw = args[1]; // string
-    withdraw_int = int(withdraw); // int
+    withdraw = args[1];
 
-    // "all" amount
-    if (typeof(withdraw) == "string"
-            && withdraw == "all")
+    if (withdraw == "all")
     {
-        withdraw_internal();
-        return;
+        withdraw = self bank_read();
     }
 
-    if (withdraw_int < 0 || withdraw_int == 0)
+    if (int64_op(withdraw, "<=", 0))
     {
-        self _error("You cannot withdraw invalid amounts of money");
+        self _error("You cannot withdraw invalid amounts of money.");
         return;
     }
 
-    withdraw_internal(withdraw_int);
+    new_score = int64_op(self.score, "+", withdraw);
+    if (int64_op(new_score, ">", 1'000'000))
+    {
+        value = 1'000'000 - self.score;
+        if (value == 0)
+        {
+            self _error("You already have maximum points!");
+        }
+
+        withdraw_internal(value);
+    }
+    else
+    {
+        withdraw_internal(int(withdraw));
+    }
 }
 
 withdraw_internal(money)
 {
-    guid = va("%s", self getguid());
-    bank = jsonparse(readfile(level.bank_file));
-    if (!isdefined(bank[guid]))
+    current = self bank_read();
+    if (int64_op(current, "<", money))
     {
-        self _error("You do not have a bank account with money");
+        self _error("You cannot withdraw more money than you have.");
         return;
     }
 
-    // if money isn't defined, let's assume it's all the money they wanna withdraw
-    if (!isdefined(money))
+    self bank_sub(money);
+    current = self bank_read();
+    self tell(va("You have withdrawn ^2$%s ^7from the bank, you have ^2$%s ^7remaining.", money, current));
+
+    if (int64_op(current, "==", 0))
     {
-        money = bank[guid];
+        self bank_remove();
     }
 
-    _bank_log(money);
-    _bank_log(bank[guid]);
-    if (money > bank[guid])
-    {
-        self _error("You cannot withdraw more money than you have");
-        return;
-    }
-
-    // subtract old money - withdraw
-    old = bank[guid];
-    bank[guid] = int((old - money));
     self.score += money;
-
-    self tell(va("You have withdrew ^2$%s ^7from the bank, you have ^2$%s ^7remaining", money, bank[guid]));
-
-    if (bank[guid] == 0)
-    {
-        arrayremovekey(bank, guid);
-        _bank_log(va("Deleting bank entry for %s", guid));
-    }
-
-    writefile(level.bank_file, jsonserialize(bank));
 }
 
 balance()
 {
-    bank = jsonparse(readfile(level.bank_file));
-    guid = va("%s", self getguid());
-    if (!isdefined(bank[guid]))
-    {
-        self _error("You do not have a bank account with money");
-        return;
-    }
-
-    self tell(va("You have ^2$%s ^7in your bank account", bank[guid]));
+    value = self bank_read();
+    self tell(va("You have ^2$%s ^7in your bank account.", value));
 }
