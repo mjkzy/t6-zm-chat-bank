@@ -93,6 +93,7 @@ deposit(args)
         return;
     }
 
+    // if deposit_int is 0, it could either be a false return due to invalid casting or just be literally 0, so win win
     if (deposit_int < 0 || deposit_int == 0 || (self.score - deposit_int) < 0)
     {
         self _error("You cannot deposit invalid amounts of money");
@@ -107,6 +108,7 @@ deposit(args)
     deposit_internal(deposit_int);
 }
 
+// this function handles the exact same code and I use it twice so this is the "internal" part
 deposit_internal(money)
 {
     guid = va("%s", self getguid()); // getguid() returns int but this will make it string
