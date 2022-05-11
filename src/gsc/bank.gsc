@@ -169,18 +169,18 @@ withdraw_internal(money)
         return;
     }
 
+    // if money isn't defined, let's assume it's all the money they wanna withdraw
+    if (!isdefined(money))
+    {
+        money = bank[guid];
+    }
+
     _bank_log(money);
     _bank_log(bank[guid]);
     if (money > bank[guid])
     {
         self _error("You cannot withdraw more money than you have");
         return;
-    }
-
-    // if money isn't defined, let's assume it's all the money they wanna withdraw
-    if (!isdefined(money))
-    {
-        money = bank[guid];
     }
 
     // subtract old money - withdraw
