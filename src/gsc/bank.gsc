@@ -73,7 +73,7 @@ player_say(message, mode)
             break;
         }
 
-        return false; 
+        return false;
     }
 
     return true;
@@ -87,25 +87,14 @@ deposit(args)
         return;
     }
 
-    deposit = args[1];
-    _bank_log(typeof(deposit));
-    _bank_log(deposit);
-    deposit_int = int(deposit);
-    _bank_log(typeof(deposit_int));
-    _bank_log(deposit_int);
+    deposit = args[1]; // string
+    deposit_int = int(deposit); // int
 
-    // if the int cast returns 0 but deposit wasn't 0 originally, then the cast failed
-    // this may be a false return but it's hard to distinguish
+    // "all" amount
     if (typeof(deposit) == "string"
-            && deposit != "0"
-            && typeof(deposit_int) == "int"
-            && deposit_int == 0) // false?
+            && deposit == "all")
     {
-        if (deposit == "all")
-        {
-            deposit_internal(self.score);
-        }
-
+        deposit_internal(self.score);
         return;
     }
 
@@ -114,7 +103,7 @@ deposit(args)
         self _error("You cannot deposit invalid amounts of money");
         return;
     }
-    if (deposit_int > self.score)
+    else if (deposit_int > self.score)
     {
         self _error("You cannot deposit more money than you have");
         return;
@@ -150,25 +139,14 @@ withdraw(args)
         return;
     }
 
-    withdraw = args[1];
-    _bank_log(typeof(withdraw));
-    _bank_log(withdraw);
-    withdraw_int = int(withdraw);
-    _bank_log(typeof(withdraw_int));
-    _bank_log(withdraw_int);
+    withdraw = args[1]; // string
+    withdraw_int = int(withdraw); // int
 
-    // if the int cast returns 0 but deposit wasn't 0 originally, then the cast failed
-    // this may be a false return but it's hard to distinguish
-    if (typeof(withdraw) == "string"
-            && withdraw != "0"
-            && typeof(withdraw_int) == "int"
-            && withdraw_int == 0) // false?
+    // "all" amount
+    if (typeof(deposit) == "string"
+            && deposit == "all")
     {
-        if (withdraw == "all")
-        {
-            withdraw_internal();
-        }
-
+        withdraw_internal();
         return;
     }
 
@@ -195,7 +173,7 @@ withdraw_internal(money)
     _bank_log(bank[guid]);
     if (money > bank[guid])
     {
-        self _error("You cannot withdraw more money than you have (/balance)");
+        self _error("You cannot withdraw more money than you have");
         return;
     }
 
@@ -210,7 +188,7 @@ withdraw_internal(money)
     bank[guid] = int((old - money));
     self.score += money;
 
-    self tell(va("You have withdrew ^2$%s ^7into the bank, you have ^2$%s ^7remaining", money, bank[guid]));
+    self tell(va("You have withdrew ^2$%s ^7from the bank, you have ^2$%s ^7remaining", money, bank[guid]));
 
     if (bank[guid] == 0)
     {
