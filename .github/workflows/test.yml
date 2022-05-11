@@ -1,4 +1,4 @@
-name: Compile Mod
+name: Compile Test Mod
 on:
   push:
     branches: [ test ]
