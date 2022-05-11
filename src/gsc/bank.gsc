@@ -26,7 +26,7 @@ init()
         _bank_log("Creating bank directory...");
         createdirectory(level.bank_folder);
     }
-    _bank_log(va("level.bank_folder = %s", level.bank));
+    _bank_log(va("level.bank_folder = %s", level.bank_folder));
 
     level.bank_file = va("%s/bank.json", level.bank_folder);
     if (!fileexists(level.bank_file))
@@ -36,7 +36,7 @@ init()
         bank = [];
         writefile(level.bank_file, jsonserialize(bank));
     }
-    _bank_log(va("level.bank_file = %s", level.bank));
+    _bank_log(va("level.bank_file = %s", level.bank_file));
 
     // add callback to player chat
     onPlayerSay(::player_say);
@@ -110,7 +110,7 @@ deposit(args)
 deposit_internal(money)
 {
     guid = va("%s", self getguid()); // getguid() returns int but this will make it string
-    bank = jsonparse(readfile(level.bank));
+    bank = jsonparse(readfile(level.bank_file));
     if (!isdefined(bank[guid]))
     {
         _bank_log(va("Creating new bank entry for %s", guid));
@@ -123,7 +123,7 @@ deposit_internal(money)
 
     self tell(va("You have deposited ^2$%s ^7into the bank", money));
 
-    writefile(level.bank, jsonserialize(bank));
+    writefile(level.bank_file, jsonserialize(bank));
 }
 
 withdraw(args)
@@ -157,7 +157,7 @@ withdraw(args)
 withdraw_internal(money)
 {
     guid = va("%s", self getguid());
-    bank = jsonparse(readfile(level.bank));
+    bank = jsonparse(readfile(level.bank_file));
     if (!isdefined(bank[guid]))
     {
         self _error("You do not have a bank account with money");
@@ -191,12 +191,12 @@ withdraw_internal(money)
         _bank_log(va("Deleting bank entry for %s", guid));
     }
 
-    writefile(level.bank, jsonserialize(bank));
+    writefile(level.bank_file, jsonserialize(bank));
 }
 
 balance()
 {
-    bank = jsonparse(readfile(level.bank));
+    bank = jsonparse(readfile(level.bank_file));
     guid = va("%s", self getguid());
     if (!isdefined(bank[guid]))
     {
