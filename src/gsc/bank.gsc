@@ -77,6 +77,13 @@ player_say(message, mode)
 
     if (message[0] == "/" || message[0] == "!")
     {
+        // disallow commands after game ends
+        if (level.intermission)
+        {
+            self _error("You cannot use the bank after the game has ended.");
+            return false;
+        }
+
         args = strtok(message, " ");
         command = getSubStr(args[0], 1);
 
