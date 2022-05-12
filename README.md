@@ -1,13 +1,14 @@
 # T6ZM Chat Bank
-a simple POC chat bank system using JSON files.
+a simple chat bank system
 
 ## requisites
-[t6-gsc-utils](https://github.com/fedddddd/t6-gsc-utils/releases)
+[t6-gsc-utils](https://github.com/fedddddd/t6-gsc-utils/releases)<br/>
 
 ## commands
 <b>/deposit %amount%</b> (/d) - deposit money to bank account</br>
 <b>/withdraw %amount%</b> (/w) - withdraw money from bank account</br>
 <b>/balance</b> (/b, /money) - shows balance in bank account</br>
 
-## possible issues
-using this on multiple servers could lead to unexpected/bad behavior. for this reason, this isn't ideal in the current state. this is because multiple processes could access the file and wouldn't be able to write.
+## compiling yourself
+1. download [gsc-tool](https://github.com/xensik/gsc-tool/releases)
+2. compile with command `./gsc-tool.exe comp t6 bank.gsc`
