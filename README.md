@@ -1,5 +1,5 @@
 # T6ZM Chat Bank
-a simple chat bank system
+a simple chat bank system. thanks to [fed](https://github.com/fedddddd) for changes and his plugin!
 
 ## requisites
 [t6-gsc-utils](https://github.com/fedddddd/t6-gsc-utils/releases)<br/>
