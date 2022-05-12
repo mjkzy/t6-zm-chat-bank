@@ -1,0 +1,25 @@
+name: Compile Test Mod
+on:
+  push:
+    branches: [ test ]
+jobs:
+  create_prerelease:
+    name: Create GitHub Release
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Compile Mod
+        shell: cmd
+        # Arguments:
+          # release.zip = File Name to have under your GitHub Release.
+        run: cd tools && call compile.bat bank.zip
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "test"
+          prerelease: true
+          title: "Test Mod Release"
+          files: |
+            tools/bank.zip
