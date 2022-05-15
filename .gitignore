@@ -1,1 +1,4 @@
 *.orig
+c.bat
+
+tools/temp/

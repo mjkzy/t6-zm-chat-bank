@@ -300,3 +300,42 @@ balance()
     value = self bank_read();
     self tell(va("you have ^2$%s ^7in your bank account.", value));
 }
+
+leaderboard()
+{
+    self.leaderboardLock = true;
+    self tell("Getting Top 3... (this could take time)");
+
+    top_banks = [];
+    for (i = 0; i < 3; i++)
+    {
+        top_banks[i] = [];
+        top_banks[i]["id"] = 0;
+        top_banks[i]["value"] = 0;
+    }
+
+    bank_files = listFiles(level.bank_folder);
+    for (i = 0; int64_op(i, "<", bank_files.size); i++)
+    {
+        name = StrTok(bank_files[i], "/");
+        name = name[name.size - 1];
+        value = readFile(bank_files[i]);
+
+        // check to see if value is higher than a top value
+        for (j = 0; j < top_banks.size; j++)
+        {
+            if (int64_op(value, ">", top_banks[j]["value"]))
+            {
+                top_banks[j]["id"] = name;
+                top_banks[j]["value"] = value;
+                break;
+            }
+        }
+    }
+
+    // tell player values
+    for (i = 0; i < top_banks.size; i++)
+        self tell(va("%s: ^2$%s^7 by GUID %s", (i + 1), top_banks[i]["value"], top_banks[i]["id"]));
+
+    self.leaderboardLock = false;
+}
