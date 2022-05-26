@@ -304,7 +304,7 @@ balance()
 leaderboard()
 {
     self.leaderboardLock = true;
-    self tell("Getting Top 3... (this could take time)");
+    self tell("getting top 3 (this could take time)");
 
     top_banks = [];
     for (i = 0; i < 3; i++)
