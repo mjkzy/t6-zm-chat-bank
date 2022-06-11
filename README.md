@@ -8,6 +8,7 @@ a simple chat bank system. thanks to [fed](https://github.com/fedddddd) for chan
 <b>/deposit %amount%</b> (/d) - deposit money to bank account</br>
 <b>/withdraw %amount%</b> (/w) - withdraw money from bank account</br>
 <b>/balance</b> (/b, /money) - shows balance in bank account</br>
+<b>/pay %player% %amount%</b> (/p) - pay another player money from your current score
 
 ## compiling yourself
 1. download [gsc-tool](https://github.com/xensik/gsc-tool/releases)
