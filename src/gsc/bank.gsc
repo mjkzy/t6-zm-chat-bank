@@ -1,16 +1,27 @@
 #include maps\mp\_utility;
 #include common_scripts\utility;
 
-// printing utils and such
-_bank_log(msg)
-{
-    if (level._bank_debug)
-        printf(va("^2[BANK]: ^7%s", msg));
-}
-
+// utils and such
 _error(msg)
 {
     self tell(va("^1ERROR: ^7%s", msg));
+}
+
+// a player should never have a clantag, but just in case :P
+get_player_name(player)
+{
+    player_name = player.name;
+
+    for(i = 0; i < player.name.size; i++)
+    {
+        if (player.name[i] == "]")
+            break;
+    }
+
+    if (player.name.size != i)
+        player_name = getSubStr(player.name, i + 1, player.name.size);
+
+    return player_name;
 }
 
 get_bank_filename()
@@ -57,15 +68,14 @@ bank_remove()
 init()
 {
     // configurable dvars
-    level._bank_debug = getDvarIntDefault("bank_debug", 0);
+    level.bank_allow_banking = getDvarIntDefault("bank_allow_banking", 1);      // disable/enable banking (on by default)
+    level.bank_allow_paying = getDvarIntDefault("bank_allow_paying", 1);        // disable/enable paying to other players. (on by default)
+    level.bank_use_exclamation = getDvarIntDefault("bank_use_exclamation", 1);  // uses ! as prefix for commands. (on by default)
 
     // create bank folders/files
     level.bank_folder = va("%s/bank", getdvar("fs_homepath"));
     if (!directoryExists(level.bank_folder))
-    {
-        _bank_log("Creating bank directory...");
         createDirectory(level.bank_folder);
-    }
 
     // add callback to player chat
     onPlayerSay(::player_say);
@@ -75,12 +85,12 @@ player_say(message, mode)
 {
     message = toLower(message);
 
-    if (message[0] == "/" || message[0] == "!")
+    if (message[0] == "/" || (is_true(level.bank_use_exclamation) && message[0] == "!"))
     {
         // disallow commands after game ends
         if (level.intermission)
         {
-            self _error("You cannot use the bank after the game has ended.");
+            self _error("you cannot use the bank after the game has ended.");
             return false;
         }
 
@@ -92,12 +102,22 @@ player_say(message, mode)
         case "deposit":
         case "d":
         {
+            if (is_false(level.bank_allow_banking))
+            {
+                self tell("banking is not enabled on this server.");
+                return false;
+            }
             self thread deposit(args);
             return false;
         }
         case "withdraw":
         case "w":
         {
+            if (is_false(level.bank_allow_banking))
+            {
+                self tell("banking is not enabled on this server.");
+                return false;
+            }
             self thread withdraw(args);
             return false;
         }
@@ -105,7 +125,23 @@ player_say(message, mode)
         case "b":
         case "money":
         {
+            if (is_false(level.bank_allow_banking))
+            {
+                self tell("banking is not enabled on this server.");
+                return false;
+            }
             self thread balance();
+            return false;
+        }
+        case "pay":
+        case "p":
+        {
+            if (is_false(level.bank_allow_paying))
+            {
+                self tell("paying is not enabled on this server.");
+                return false;
+            }
+            self thread pay(args);
             return false;
         }
         }
@@ -118,7 +154,7 @@ deposit(args)
 {
     if (!isdefined(args[1]))
     {
-        self _error("You must provide an amount to deposit.");
+        self _error("usage: ^1/deposit ^7<amount|all>");
         return;
     }
 
@@ -130,33 +166,35 @@ deposit(args)
         return;
     }
 
+    deposit = int(deposit);
+
     if (int64_op(deposit, "<=", 0))
     {
-        self _error("You cannot deposit invalid amounts of money.");
+        self _error("you cannot deposit invalid amounts of money.");
         return;
     }
 
     if (int64_op(deposit, ">", self.score))
     {
-        self _error("You cannot deposit more money than you have.");
+        self _error("you cannot deposit more money than you have.");
         return;
     }
 
-    deposit_internal(int(deposit));
+    deposit_internal(deposit);
 }
 
 deposit_internal(money)
 {
     self bank_add(money);
     self.score -= money;
-    self tell(va("You have deposited ^2$%s^7 into the bank, you have ^2$%s ^7remaining.", money, self bank_read()));
+    self tell(va("you deposited ^2$%s^7 into the bank, you have ^2$%s ^7remaining.", money, self bank_read()));
 }
 
 withdraw(args)
 {
     if (!isdefined(args[1]))
     {
-        self _error("You must provide an amount to withdraw.");
+        self _error("usage: ^1/withdraw ^7<amount|all>");
         return;
     }
 
@@ -167,9 +205,11 @@ withdraw(args)
         withdraw = self bank_read();
     }
 
+    withdraw = int(withdraw);
+
     if (int64_op(withdraw, "<=", 0))
     {
-        self _error("You cannot withdraw invalid amounts of money.");
+        self _error("you cannot withdraw invalid amounts of money.");
         return;
     }
 
@@ -179,14 +219,14 @@ withdraw(args)
         value = 1'000'000 - self.score;
         if (value == 0)
         {
-            self _error("You already have maximum points!");
+            self _error("you already have maximum points!");
         }
 
         withdraw_internal(value);
     }
     else
     {
-        withdraw_internal(int(withdraw));
+        withdraw_internal(withdraw);
     }
 }
 
@@ -195,13 +235,13 @@ withdraw_internal(money)
     current = self bank_read();
     if (int64_op(current, "<", money))
     {
-        self _error("You cannot withdraw more money than you have.");
+        self _error("you cannot withdraw more money than you have.");
         return;
     }
 
     self bank_sub(money);
     current = self bank_read();
-    self tell(va("You have withdrawn ^2$%s ^7from the bank, you have ^2$%s ^7remaining.", money, current));
+    self tell(va("you withdrew ^2$%s ^7from the bank, you have ^2$%s ^7remaining.", money, current));
 
     if (int64_op(current, "==", 0))
     {
@@ -211,8 +251,52 @@ withdraw_internal(money)
     self.score += money;
 }
 
+pay(args)
+{
+    if (!isdefined(args[1]) || !isdefined(args[2]))
+    {
+        self _error("usage: ^1/pay ^7<player> <amount>");
+        return;
+    }
+
+    target_name = args[1];
+
+    foreach (p in level.players)
+    {
+        player_name = tolower(get_player_name(p));
+        if (issubstr(player_name, target_name))
+            player = p;
+    }
+
+    if (!isdefined(player))
+    {
+        self _error(va("could not find player with name ^1%s^7", target_name));
+        return;
+    }
+
+    amount = int(args[2]);
+
+    if (int64_op(amount, "<=", 0))
+    {
+        self _error("you cannot pay invalid amounts of money.");
+        return;
+    }
+
+    if (int64_op(amount, ">", self.score))
+    {
+        self _error("you cannot pay more money than you have.");
+        return;
+    }
+
+    self.score -= amount;
+    player.score += amount;
+
+    self tell(va("you paid ^2$%s ^7to %s", amount, player.name));
+    player tell(va("%s ^7paid you ^2$%s^7!", self.name, amount));
+}
+
 balance()
 {
     value = self bank_read();
-    self tell(va("You have ^2$%s ^7in your bank account.", value));
+    self tell(va("you have ^2$%s ^7in your bank account.", value));
 }
