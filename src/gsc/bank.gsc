@@ -1,13 +1,17 @@
 #include maps\mp\_utility;
 #include common_scripts\utility;
 
-// utils and such
 _error(msg)
 {
-    self tell(va("^1ERROR: ^7%s", msg));
+    self tell(va("^1error: ^7%s", msg));
 }
 
-// a player should never have a clantag, but just in case :P
+get_dvar_str_default(dvar, default_value)
+{
+    dvar_value = getdvar(dvar);
+    return (dvar_value != "" ? dvar_value : default_value);
+}
+
 get_player_name(player)
 {
     player_name = player.name;
@@ -15,11 +19,15 @@ get_player_name(player)
     for(i = 0; i < player.name.size; i++)
     {
         if (player.name[i] == "]")
+        {
             break;
+        }
     }
 
     if (player.name.size != i)
+    {
         player_name = getSubStr(player.name, i + 1, player.name.size);
+    }
 
     return player_name;
 }
@@ -68,9 +76,10 @@ bank_remove()
 init()
 {
     // configurable dvars
-    level.bank_allow_banking = getDvarIntDefault("bank_allow_banking", 1);      // disable/enable banking (on by default)
-    level.bank_allow_paying = getDvarIntDefault("bank_allow_paying", 1);        // disable/enable paying to other players. (on by default)
-    level.bank_use_exclamation = getDvarIntDefault("bank_use_exclamation", 1);  // uses ! as prefix for commands. (on by default)
+    level.bank_allow_banking = getDvarIntDefault("bank_allow_banking", 1);              // disable/enable banking (on by default)
+    level.bank_allow_paying = getDvarIntDefault("bank_allow_paying", 1);                // disable/enable paying to other players. (on by default)
+
+    level.bank_preferred_prefix = get_dvar_str_default("bank_preferred_prefix", "/");   // the preferred prefix that must be at the beginning of the message ("/" by default)
 
     // create bank folders/files
     level.bank_folder = va("%s/bank", getdvar("fs_homepath"));
@@ -81,21 +90,26 @@ init()
     onPlayerSay(::player_say);
 }
 
+is_prefix(str)
+{
+    return (getsubstr(str, 0, level.bank_preferred_prefix.size) == level.bank_preferred_prefix);
+}
+
 player_say(message, mode)
 {
     message = toLower(message);
 
-    if (message[0] == "/" || (is_true(level.bank_use_exclamation) && message[0] == "!"))
+    if (is_prefix(message))
     {
         // disallow commands after game ends
-        if (level.intermission)
+        if (is_true(level.intermission))
         {
             self _error("you cannot use the bank after the game has ended.");
             return false;
         }
 
         args = strtok(message, " ");
-        command = getSubStr(args[0], 1);
+        command = getsubstr(args[0], level.bank_preferred_prefix.size);
 
         switch (command)
         {
@@ -152,7 +166,7 @@ player_say(message, mode)
 
 deposit(args)
 {
-    if (!isdefined(args[1]))
+    if (args.size < 1)
     {
         self _error("usage: ^1/deposit ^7<amount|all>");
         return;
@@ -192,7 +206,7 @@ deposit_internal(money)
 
 withdraw(args)
 {
-    if (!isdefined(args[1]))
+    if (args.size < 1)
     {
         self _error("usage: ^1/withdraw ^7<amount|all>");
         return;
@@ -241,7 +255,7 @@ withdraw_internal(money)
 
     self bank_sub(money);
     current = self bank_read();
-    self tell(va("you withdrew ^2$%s ^7from the bank, you have ^2$%s ^7remaining.", money, current));
+    self tell(va("you withdrew ^2$%s ^7from the bank. (^2$%s ^7remaining)", money, current));
 
     if (int64_op(current, "==", 0))
     {
@@ -253,7 +267,7 @@ withdraw_internal(money)
 
 pay(args)
 {
-    if (!isdefined(args[1]) || !isdefined(args[2]))
+    if (args.size < 2)
     {
         self _error("usage: ^1/pay ^7<player> <amount>");
         return;
