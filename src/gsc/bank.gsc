@@ -109,7 +109,7 @@ player_say(message, mode)
         }
 
         args = strtok(message, " ");
-        command = getsubstr(args[0], level.bank_preferred_prefix.size);
+        command = getsubstr(args[0], 0, level.bank_preferred_prefix.size);
 
         switch (command)
         {
