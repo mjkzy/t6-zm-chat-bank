@@ -1,8 +1,8 @@
 # T6ZM Chat Bank
-a simple chat bank system. thanks to [fed](https://github.com/fedddddd) for changes and his plugin!
+a simple chat bank system. thanks to [alice](https://github.com/alicealys) for changes and [t6-gsc-utils](https://github.com/alicealys/t6-gsc-utils)!
 
 ## requisites
-[t6-gsc-utils](https://github.com/fedddddd/t6-gsc-utils/releases)<br/>
+[t6-gsc-utils](https://github.com/alicealys/t6-gsc-utils/releases)<br/>
 
 ## commands
 <b>/deposit %amount%</b> (/d) - deposit money to bank account</br>
@@ -12,4 +12,4 @@ a simple chat bank system. thanks to [fed](https://github.com/fedddddd) for chan
 
 ## compiling yourself
 1. download [gsc-tool](https://github.com/xensik/gsc-tool/releases)
-2. compile with command `./gsc-tool.exe comp t6 bank.gsc`
+2. compile with command `./gsc-tool.exe -m comp -g t6 -s pc ./bank.gsc`
