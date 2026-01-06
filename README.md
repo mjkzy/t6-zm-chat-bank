@@ -1,7 +1,7 @@
 # T6ZM Chat Bank
 a simple chat bank system. thanks to [alice](https://github.com/alicealys) for additional help
 
-**you must have [t6-gsc-utils](https://github.com/alicealys/t6-gsc-utils/releases)<br/> as a server plugin!**
+**you must have [t6-gsc-utils](https://github.com/alicealys/t6-gsc-utils/releases) as a server plugin!**
 
 ## commands
 <b>/deposit %amount%</b> (/d) - deposit money to bank account</br>
